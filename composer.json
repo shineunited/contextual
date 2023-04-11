@@ -1,0 +1,41 @@
+{
+	"name": "shineunited/contextual",
+	"type": "project",
+	"keywords": [
+		"psr",
+		"container",
+		"dependency injection"
+	],
+	"require": {
+		"php": ">=8.0",
+		"psr/container": "^2.0"
+	},
+	"require-dev": {
+		"squizlabs/php_codesniffer": "^3.0",
+		"phpcompatibility/php-compatibility": "^9.3",
+		"shineunited/coding-standard": "^1.0",
+		"phpstan/phpstan": "^1.9",
+		"phpunit/phpunit": "^9.5"
+	},
+	"autoload": {
+		"psr-4": {
+			"ShineUnited\\Contextual\\": "src/"
+		}
+	},
+	"autoload-dev": {
+		"psr-4": {
+			"ShineUnited\\Contextual\\Tests\\": "tests/"
+		}
+	},
+	"scripts": {
+		"phpcs": "phpcs -ps",
+		"phpcbf": "phpcbf -p",
+		"phpstan": "phpstan analyse",
+		"phpunit": "phpunit --do-not-cache-result"
+	},
+	"config": {
+		"allow-plugins": {
+			"dealerdirect/phpcodesniffer-composer-installer": true
+		}
+	}
+}
