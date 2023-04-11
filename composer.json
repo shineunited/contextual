@@ -1,6 +1,7 @@
 {
 	"name": "shineunited/contextual",
-	"type": "project",
+	"type": "library",
+	"license": "MIT",
 	"keywords": [
 		"psr",
 		"container",
