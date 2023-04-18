@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace ShineUnited\Contextual\Callback;
 
+use ShineUnited\Contextual\EmptyContainer;
 use ShineUnited\Contextual\Exception\DependencyException;
 use Psr\Container\ContainerInterface;
 use Psr\Container\ContainerExceptionInterface;
@@ -290,6 +291,24 @@ abstract class ReflectionCallback implements CallbackInterface {
 		}
 
 		return $parameters;
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	public function __invoke(mixed ...$args): mixed {
+		if (!empty($args) && reset($args) instanceof ContainerInterface) {
+			// if the first argument is a container use that
+
+			$container = array_shift($args);
+
+			return $this->execute($container, $args);
+		}
+
+		// otherwise use an empty container
+		$container = new EmptyContainer();
+
+		return $this->execute($container, $args);
 	}
 
 	/**

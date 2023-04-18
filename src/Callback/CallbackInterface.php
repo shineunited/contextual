@@ -115,6 +115,25 @@ interface CallbackInterface {
 	public function execute(ContainerInterface $container, array $arguments = []): mixed;
 
 	/**
+	 * Invoke the callback directly.
+	 *
+	 * If the first argument is a container it should be used along with the remaining arguments to resolve the callback parameters.
+	 *
+	 * ```php
+	 * $callback($container, param1: $value1, param2: $value2);
+	 * $callback($container, $value1, $value2);
+	 * $callback($service, $value1, $value2); // no container
+	 * ```
+	 *
+	 * @param mixed ...$args List of arguments to invoke with. The first argument may be a container.
+	 *
+	 * @throws ContainerExceptionInterface Problem resolving callback dependencies.
+	 *
+	 * @return mixed The result.
+	 */
+	public function __invoke(mixed ...$args): mixed;
+
+	/**
 	 * {@inheritDoc}
 	 */
 	public function __toString(): string;
