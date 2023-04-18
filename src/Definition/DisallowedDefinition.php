@@ -55,6 +55,13 @@ class DisallowedDefinition implements DefinitionInterface {
 	/**
 	 * {@inheritDoc}
 	 */
+	public function isAlias(): bool {
+		return false;
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
 	public function isResolvable(ContainerInterface $container): bool {
 		return false;
 	}

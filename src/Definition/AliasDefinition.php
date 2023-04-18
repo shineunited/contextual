@@ -60,6 +60,13 @@ class AliasDefinition implements DefinitionInterface {
 	/**
 	 * {@inheritDoc}
 	 */
+	public function isAlias(): bool {
+		return true;
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
 	public function isResolvable(ContainerInterface $container): bool {
 		if ($container->has($this->alias)) {
 			return true;

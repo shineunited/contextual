@@ -13,81 +13,73 @@ declare(strict_types=1);
 
 namespace ShineUnited\Contextual\Definition;
 
+use ShineUnited\Contextual\Exception\DependencyException;
 use Psr\Container\ContainerInterface;
 
 /**
- * Value Definition
+ * Protected Definition
  */
-class ValueDefinition implements DefinitionInterface {
-	private string $id;
-	private mixed $value;
-	private bool $protected;
+class ProtectedDefinition implements DefinitionInterface {
+	private DefinitionInterface $definition;
 
 	/**
 	 * Create a new definition.
 	 *
-	 * @param string  $id      The definition identifier.
-	 * @param mixed   $value   The value.
-	 * @param boolean $protect Protect this definition.
+	 * @param DefinitionInterface $definition The definition to protect.
 	 */
-	public function __construct(string $id, mixed $value, bool $protect = false) {
-		$this->id = $id;
-		$this->value = $value;
-		$this->protected = $protect;
+	public function __construct(DefinitionInterface $definition) {
+		$this->definition = $definition;
 	}
 
 	/**
 	 * {@inheritDoc}
 	 */
 	public function getIdentifier(): string {
-		return $this->id;
+		return $this->definition->getIdentifier();
 	}
 
 	/**
 	 * {@inheritDoc}
 	 */
 	public function isDecorator(): bool {
-		return false;
+		return $this->definition->isDecorator();
 	}
 
 	/**
 	 * {@inheritDoc}
 	 */
 	public function isProtected(): bool {
-		return $this->protected;
+		return true;
 	}
 
 	/**
 	 * {@inheritDoc}
 	 */
 	public function isAlias(): bool {
-		return true;
+		return $this->definition->isAlias();
 	}
 
 	/**
 	 * {@inheritDoc}
 	 */
 	public function isResolvable(ContainerInterface $container): bool {
-		return true;
+		return $this->definition->isResolvable($container);
 	}
 
 	/**
 	 * {@inheritDoc}
 	 */
 	public function resolve(ContainerInterface $container): mixed {
-		return $this->value;
+		return $this->definition->resolve($container);
 	}
 
 	/**
 	 * {@inheritDoc}
 	 */
 	public function __toString(): string {
-		$type = gettype($this->value);
-
 		return sprintf(
-			'value "%s", type "%s"',
-			$this->id,
-			$type
+			'(protected) %s',
+			$this->definition->__toString()
 		);
 	}
 }

@@ -47,6 +47,15 @@ interface DefinitionInterface {
 	public function isProtected(): bool;
 
 	/**
+	 * Check if definition is an alias.
+	 *
+	 * Used by containers to determine if a WeakReference should be used to avoid unnecessary references.
+	 *
+	 * @return boolean True if definition returns an alias.
+	 */
+	public function isAlias(): bool;
+
+	/**
 	 * Check if definition is resolvable in provided container.
 	 *
 	 * @param ContainerInterface $container The container to resolve in.

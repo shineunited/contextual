@@ -105,6 +105,17 @@ class CompositeDefinition implements DefinitionInterface {
 	/**
 	 * {@inheritDoc}
 	 */
+	public function isAlias(): bool {
+		if (!empty($this->decorators)) {
+			return false;
+		}
+
+		return $this->definition->isAlias();
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
 	public function isResolvable(ContainerInterface $container): bool {
 		if (!$this->definition->isResolvable($container)) {
 			return false;

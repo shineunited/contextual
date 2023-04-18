@@ -13,26 +13,28 @@ declare(strict_types=1);
 
 namespace ShineUnited\Contextual\Definition;
 
+use ShineUnited\Contextual\Exception\DependencyException;
 use Psr\Container\ContainerInterface;
+use WeakReference;
 
 /**
- * Value Definition
+ * Reference Definition
  */
-class ValueDefinition implements DefinitionInterface {
+class ReferenceDefinition implements DefinitionInterface {
 	private string $id;
-	private mixed $value;
+	private WeakReference $reference;
 	private bool $protected;
 
 	/**
 	 * Create a new definition.
 	 *
 	 * @param string  $id      The definition identifier.
-	 * @param mixed   $value   The value.
+	 * @param object  $object  The object to reference.
 	 * @param boolean $protect Protect this definition.
 	 */
-	public function __construct(string $id, mixed $value, bool $protect = false) {
+	public function __construct(string $id, object $object, bool $protect = false) {
 		$this->id = $id;
-		$this->value = $value;
+		$this->reference = WeakReference::create($object);
 		$this->protected = $protect;
 	}
 
@@ -68,6 +70,10 @@ class ValueDefinition implements DefinitionInterface {
 	 * {@inheritDoc}
 	 */
 	public function isResolvable(ContainerInterface $container): bool {
+		if (is_null($this->reference->get())) {
+			return false;
+		}
+
 		return true;
 	}
 
@@ -75,17 +81,25 @@ class ValueDefinition implements DefinitionInterface {
 	 * {@inheritDoc}
 	 */
 	public function resolve(ContainerInterface $container): mixed {
-		return $this->value;
+		$value = $this->reference->get();
+		if (is_null($value)) {
+			throw new DependencyException(sprintf(
+				'Referenced object "%s" has already been destroyed.',
+				$this->getIdentifier()
+			));
+		}
+
+		return $this->reference->get();
 	}
 
 	/**
 	 * {@inheritDoc}
 	 */
 	public function __toString(): string {
-		$type = gettype($this->value);
+		$type = gettype($this->reference->get());
 
 		return sprintf(
-			'value "%s", type "%s"',
+			'reference "%s", type "%s"',
 			$this->id,
 			$type
 		);
