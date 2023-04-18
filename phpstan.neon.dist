@@ -8,6 +8,7 @@ parameters:
 			- 'Throwable'
 		uncheckedExceptionRegexes:
 			- '#^PHPUnit\\.*$#'
+			- '#^SebastianBergmann\\.*$#'
 		check:
 			missingCheckedExceptionInThrows: true
 			tooWideThrowType: true
