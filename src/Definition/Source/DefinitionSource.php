@@ -11,8 +11,10 @@
 
 declare(strict_types=1);
 
-namespace ShineUnited\Contextual\Definition;
+namespace ShineUnited\Contextual\Definition\Source;
 
+use ShineUnited\Contextual\Definition\CompositeDefinition;
+use ShineUnited\Contextual\Definition\DefinitionInterface;
 use ShineUnited\Contextual\Exception\DefinitionNotFoundException;
 use ShineUnited\Contextual\Exception\InvalidDefinitionException;
 
