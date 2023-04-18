@@ -13,8 +13,8 @@ declare(strict_types=1);
 
 namespace ShineUnited\Contextual;
 
-use ShineUnited\Contextual\Definition\DefinitionSourceInterface;
 use ShineUnited\Contextual\Definition\DefinitionInterface;
+use ShineUnited\Contextual\Definition\Source\DefinitionSourceInterface;
 use ShineUnited\Contextual\Exception\EntryNotFoundException;
 use Psr\Container\ContainerInterface;
 use Psr\Container\ContainerExceptionInterface;
@@ -49,13 +49,6 @@ class HybridContainer extends DefinitionContainer {
 		$this->parents = new CompositeContainer(...$containers);
 
 		parent::__construct(...$definitions);
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	protected function hasParentContainer(): bool {
-		return true;
 	}
 
 	/**

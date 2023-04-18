@@ -17,13 +17,12 @@ use ShineUnited\Contextual\Callback\ClosureCallback;
 use ShineUnited\Contextual\Definition\DefinitionInterface;
 use ShineUnited\Contextual\Definition\CallbackDefinition;
 use ShineUnited\Contextual\Definition\ValueDefinition;
-use ShineUnited\Contextual\Definition\DefinitionSourceInterface;
-use ShineUnited\Contextual\Definition\CompositeDefinitionSource;
+use ShineUnited\Contextual\Definition\Source\CompositeDefinitionSource;
+use ShineUnited\Contextual\Definition\Source\DefinitionSourceInterface;
 use ShineUnited\Contextual\Exception\EntryNotFoundException;
 use ShineUnited\Contextual\Exception\DependencyException;
 use ShineUnited\Contextual\Exception\DefinitionNotFoundException;
 use ShineUnited\Contextual\Exception\InvalidDefinitionException;
-use ShineUnited\Contextual\Exception\InvalidCallbackException;
 use Psr\Container\ContainerInterface;
 use Psr\Container\ContainerExceptionInterface;
 use Closure;
@@ -35,7 +34,10 @@ use WeakReference;
 class DefinitionContainer extends BaseContainer {
 	private CompositeDefinitionSource $definitions;
 
-	private array $resolvedDefinitions = [];
+	private EmptyContainer $parentContainer;
+
+	private array $resolvedValues = [];
+	private array $resolvedReferences = [];
 	private array $currentlyResolving = [];
 	private array $resolverStack = [];
 
@@ -48,6 +50,8 @@ class DefinitionContainer extends BaseContainer {
 	 */
 	public function __construct(DefinitionSourceInterface|DefinitionInterface|array ...$definitions) {
 		$this->definitions = new CompositeDefinitionSource();
+
+		$this->parentContainer = new EmptyContainer();
 
 		foreach ($definitions as $definition) {
 			if ($definition instanceof DefinitionSourceInterface) {
@@ -73,24 +77,6 @@ class DefinitionContainer extends BaseContainer {
 	}
 
 	/**
-	 * Check if a distinct parent container exists.
-	 *
-	 * @return boolean True if parent container exists.
-	 */
-	protected function hasParentContainer(): bool {
-		return false;
-	}
-
-	/**
-	 * Get the parent container. If there is not a parent container return self.
-	 *
-	 * @return ContainerInterface The parent container.
-	 */
-	protected function getParentContainer(): ContainerInterface {
-		return $this;
-	}
-
-	/**
 	 * {@inheritDoc}
 	 */
 	public function has(string $id): bool {
@@ -101,10 +87,7 @@ class DefinitionContainer extends BaseContainer {
 		try {
 			$definition = $this->definitions->getDefinition($id);
 
-			$container = $this;
-			if ($definition->isDecorator() && $this->hasParentContainer()) {
-				$container = $this->getParentContainer();
-			}
+			$container = $this->getDefinitionContainer($definition);
 
 			if ($definition->isResolvable($container)) {
 				return true;
@@ -119,12 +102,8 @@ class DefinitionContainer extends BaseContainer {
 			return false;
 		}
 
-		if ($this->hasParentContainer()) {
-			$container = $this->getParentContainer();
-			return $container->has($id);
-		} else {
-			return false;
-		}
+		$parent = $this->getParentContainer();
+		return $parent->has($id);
 	}
 
 	/**
@@ -135,28 +114,66 @@ class DefinitionContainer extends BaseContainer {
 			return parent::get($id);
 		}
 
-		if (isset($this->resolvedDefinitions[$id]) || array_key_exists($id, $this->resolvedDefinitions)) {
-			return $this->resolveReference($this->resolvedDefinitions[$id]);
+		if (isset($this->resolvedValues[$id]) || array_key_exists($id, $this->resolvedValues)) {
+			return $this->resolvedValues[$id];
+		}
+
+		if (isset($this->resolvedReferences[$id])) {
+			$object = $this->resolvedReferences[$id]->get();
+
+			if (is_null($object)) {
+				// object has gone away, unset and allow it to regenerate
+				// TODO: should this throw an exception?
+				unset($this->resolvedReferences[$id]);
+			} else {
+				return $object;
+			}
 		}
 
 		if ($this->definitions->hasDefinition($id)) {
 			$definition = $this->definitions->getDefinition($id);
 			$value = $this->resolveDefinition($definition);
 
-			$this->resolvedDefinitions[$id] = $value;
+			if (is_object($value) && $definition->isAlias()) {
+				$this->resolvedReferences[$id] = WeakReference::create($value);
+			} else {
+				$this->resolvedValues[$id] = $value;
+			}
 
-			return $this->resolveReference($value);
+			return $value;
 		}
 
-		if ($this->hasParentContainer()) {
-			$container = $this->getParentContainer();
-			return $container->get($id);
+		$parent = $this->getParentContainer();
+		return $parent->get($id);
+	}
+
+	/**
+	 * Get the parent container. If there is not a parent container return self.
+	 *
+	 * @return ContainerInterface The parent container.
+	 */
+	protected function getParentContainer(): ContainerInterface {
+		return $this->parentContainer;
+	}
+
+	private function getDefinitionContainer(DefinitionInterface $definition): ContainerInterface {
+		if (!$definition->isDecorator()) {
+			return $this;
 		}
 
-		throw new EntryNotFoundException(sprintf(
-			'Identifier "%s" not found in container.',
-			$id
-		));
+		try {
+			$parent = $this->getParentContainer();
+			$value = $parent->get($definition->getIdentifier());
+
+			return new CompositeContainer(
+				new ValueContainer([
+					$definition->getIdentifier() => $value
+				]),
+				$this
+			);
+		} catch (ContainerExceptionInterface $exception) {
+			return $this;
+		}
 	}
 
 	/**
@@ -168,7 +185,7 @@ class DefinitionContainer extends BaseContainer {
 	 *
 	 * @return mixed The resolved value.
 	 */
-	private function resolveDefinition(DefinitionInterface $definition): mixed {
+	protected function resolveDefinition(DefinitionInterface $definition): mixed {
 		$this->resolverStack[] = $definition->getIdentifier();
 		if (isset($this->currentlyResolving[$definition->getIdentifier()])) {
 			throw new DependencyException(sprintf(
@@ -180,10 +197,7 @@ class DefinitionContainer extends BaseContainer {
 		$this->currentlyResolving[$definition->getIdentifier()] = true;
 
 		try {
-			$container = $this;
-			if ($definition->isDecorator() && $this->hasParentContainer()) {
-				$container = $this->getParentContainer();
-			}
+			$container = $this->getDefinitionContainer($definition);
 
 			$value = $definition->resolve($container);
 		} finally {
@@ -192,28 +206,5 @@ class DefinitionContainer extends BaseContainer {
 		}
 
 		return $value;
-	}
-
-	/**
-	 * Resolve a possible reference.
-	 *
-	 * @param mixed $reference The reference.
-	 *
-	 * @throws DependencyException Referenced object has been destroyed.
-	 *
-	 * @return mixed The referenced value.
-	 */
-	private function resolveReference(mixed $reference): mixed {
-		if ($reference instanceof WeakReference) {
-			$object = $reference->get();
-
-			if (is_null($object)) {
-				throw new DependencyException('Referenced object has already been destroyed.');
-			}
-
-			return $this->resolveReference($object);
-		} else {
-			return $reference;
-		}
 	}
 }
