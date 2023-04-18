@@ -14,7 +14,6 @@ declare(strict_types=1);
 namespace ShineUnited\Contextual\Definition;
 
 use Psr\Container\ContainerInterface;
-use WeakReference;
 
 /**
  * Alias Definition
@@ -73,17 +72,7 @@ class AliasDefinition implements DefinitionInterface {
 	 * {@inheritDoc}
 	 */
 	public function resolve(ContainerInterface $container): mixed {
-		$value = $container->get($this->alias);
-
-		if (!is_object($value)) {
-			return $value;
-		}
-
-		if ($value instanceof WeakReference) {
-			return $value;
-		}
-
-		return WeakReference::create($value);
+		return $container->get($this->alias);
 	}
 
 	/**
