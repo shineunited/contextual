@@ -14,7 +14,6 @@ declare(strict_types=1);
 namespace ShineUnited\Contextual\Definition;
 
 use Psr\Container\ContainerInterface;
-use WeakReference;
 
 /**
  * Value Definition
@@ -69,15 +68,7 @@ class ValueDefinition implements DefinitionInterface {
 	 * {@inheritDoc}
 	 */
 	public function resolve(ContainerInterface $container): mixed {
-		if (!is_object($this->value)) {
-			return $this->value;
-		}
-
-		if ($this->value instanceof WeakReference) {
-			return $this->value;
-		}
-
-		return WeakReference::create($this->value);
+		return $this->value;
 	}
 
 	/**
@@ -85,9 +76,6 @@ class ValueDefinition implements DefinitionInterface {
 	 */
 	public function __toString(): string {
 		$type = gettype($this->value);
-		if ($this->value instanceof WeakReference) {
-			$type = gettype($this->value->get());
-		}
 
 		return sprintf(
 			'value "%s", type "%s"',
